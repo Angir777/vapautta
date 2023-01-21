@@ -7,4 +7,4 @@ Password: admin
 
 ## Project launch on xampp:
 1. Download this repository,
-2. Create a database and import the file `wordpress.sql`,
+2. Create a database 'wordpress' and import the file `wordpress.sql`.
