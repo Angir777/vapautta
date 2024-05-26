@@ -13,6 +13,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	die( '-1' );
 }
 
+use InstagramFeed\Helpers\Util;
+
 class SB_Instagram_Feed
 {
 	/**
@@ -69,6 +71,11 @@ class SB_Instagram_Feed
 	 * @var int
 	 */
 	private $num_api_calls;
+
+	/**
+	 * @var int
+	 */
+	private $max_api_calls;
 
 	/**
 	 * @var array
@@ -947,13 +954,14 @@ class SB_Instagram_Feed
 				$this->header_data['local_avatar'] = false;
 				$sb_instagram_posts_manager->remove_error( 'connection', $connected_accounts_for_feed[ $first_user ] );
 
-				if ( ! empty( $connected_accounts_for_feed[ $first_user ]['local_avatar_url'] ) ) {
-					$this->header_data['local_avatar'] = $connected_accounts_for_feed[ $first_user ]['local_avatar_url'];
-				}
-				if ( empty( $this->header_data['bio'] )
-					 && isset( $connected_accounts_for_feed[ $first_user ]['bio'] ) ) {
+				$single_source = InstagramFeed\Builder\SBI_Source::update_single_source( $connected_accounts_for_feed[ $first_user ] );
 
-					$this->header_data['bio'] = sbi_decode_emoji( $connected_accounts_for_feed[ $first_user ]['bio'] );
+				if ( ! empty( $single_source['local_avatar_url'] ) ) {
+					$this->header_data['local_avatar'] = $single_source['local_avatar_url'];
+				}
+
+				if( isset( $this->header_data['biography'] ) && ! empty( $this->header_data['biography'] ) ) {
+					$this->header_data['bio'] = sbi_decode_emoji( $this->header_data['biography'] );
 				}
 			} else {
 				$this->should_use_backup = true;
@@ -1322,9 +1330,11 @@ class SB_Instagram_Feed
 		);
 
 		$encoded_options = sbi_json_encode( $js_options );
+		// legacy settings.
+        $path = Util::sbi_legacy_css_enabled() ? 'js/legacy/' : 'js/';
 
 		$js_option_html = '<script type="text/javascript">var sb_instagram_js_options = ' . $encoded_options . ';</script>';
-		$js_option_html .= "<script type='text/javascript' src='" . trailingslashit( SBI_PLUGIN_URL ) . 'js/sbi-scripts.min.js?ver=' . SBIVER . "'></script>";
+		$js_option_html .= "<script type='text/javascript' src='" . trailingslashit( SBI_PLUGIN_URL ) . $path . 'sbi-scripts.min.js?ver=' . SBIVER . "'></script>";
 
 		return $js_option_html;
 	}

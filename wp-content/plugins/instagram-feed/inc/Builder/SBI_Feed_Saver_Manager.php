@@ -31,6 +31,8 @@ class SBI_Feed_Saver_Manager {
 		//Detect Leaving the Page
 		add_action( 'wp_ajax_sbi_feed_saver_manager_recache_feed', array( 'InstagramFeed\Builder\SBI_Feed_Saver_Manager', 'recache_feed' ) );
 
+
+
 	}
 
 	/**
@@ -199,7 +201,7 @@ class SBI_Feed_Saver_Manager {
 	 * @since 6.0
 	 */
 	public static function delete_source() {
-		check_ajax_referer( 'sbi_admin_nonce' , 'nonce');
+		check_ajax_referer( 'sbi-admin' , 'nonce');
 
 		if ( ! sbi_current_user_can( 'manage_instagram_feed_options' ) ) {
 			wp_send_json_error();
@@ -208,7 +210,11 @@ class SBI_Feed_Saver_Manager {
 		if ( ! empty( $_POST['source_id'] ) ) {
 			if ( isset( $_POST['username'] ) && ! empty( $_POST['username'] ) ) {
 				$username = sanitize_text_field( $_POST['username'] );
-				\SB_Instagram_Connected_Account::delete_local_avatar( $username );
+				$args = array( 'username' => $username );
+
+				$source_query = SBI_Db::source_query( $args );
+
+				\SB_Instagram_Connected_Account::delete_local_avatar( $source_query['username'] );
 			}
 			$source_id = absint( $_POST['source_id'] );
 			SBI_Db::delete_source_query( $source_id );
@@ -618,7 +624,7 @@ class SBI_Feed_Saver_Manager {
 				$settings_source[] = $source['account_id'];
 
 				// don't update or insert the access token if there is an API error
-				if ( ! isset( $header_details->error ) ) {
+				if ( ! empty( $source['access_token'] ) && ! empty( $source['info'] ) ) {
 					SBI_Source::update_or_insert( $source );
 				}
 			}
@@ -720,7 +726,7 @@ class SBI_Feed_Saver_Manager {
 				$return = self::cast_boolean($value);
 			break;
 			default:
-				$return = sanitize_text_field( $value );
+				$return = sanitize_text_field( stripslashes($value) );
 			break;
 		}
 
@@ -806,5 +812,8 @@ class SBI_Feed_Saver_Manager {
 		echo sbi_json_encode( $response );
 		wp_die();
 	}
+
+
+
 
 }

@@ -321,7 +321,7 @@ class SBI_Db {
 			$data['expires'] = $to_insert['expires'];
 			$format[]        = '%s';
 		} else {
-			$data['expires'] = '2100-12-30 00:00:00';
+			$data['expires'] = '2037-12-30 00:00:00';
 			$format[]        = '%s';
 		}
 		$data['last_updated'] = gmdate( 'Y-m-d H:i:s' );
@@ -340,11 +340,12 @@ class SBI_Db {
 	/**
 	 * Query the to get feeds list for Elementor
 	 *
+	 * @param bool $default - if true, add a default option.
 	 * @return array
 	 *
 	 * @since 6.0
 	 */
-	public static function elementor_feeds_query() {
+	public static function elementor_feeds_query($default = false) {
 		global $wpdb;
 		$feeds_elementor  = array();
 		$feeds_table_name = $wpdb->prefix . 'sbi_feeds';
@@ -358,6 +359,11 @@ class SBI_Db {
 				$feeds_elementor[ $feed->id ] = $feed->feed_name;
 			}
 		}
+
+		if ( $default ){
+			$feeds_elementor[0] = esc_html__( 'Choose a Feed', 'instagram-feed' );
+		}
+
 		return $feeds_elementor;
 	}
 
@@ -532,16 +538,17 @@ class SBI_Db {
 		global $wpdb;
 		$feeds_table_name       = $wpdb->prefix . 'sbi_feeds';
 		$feed_caches_table_name = $wpdb->prefix . 'sbi_feed_caches';
-		$feed_ids_array         = implode( ',', array_map( 'absint', $feed_ids_array ) );
+		
+		$sanitized_feed_ids_array = array();
+		foreach ( $feed_ids_array as $id ) {
+			$sanitized_feed_ids_array[] = absint( $id );
+		}
+		$feed_ids_array         = implode( ',', $sanitized_feed_ids_array );
 		$wpdb->query(
-			$wpdb->prepare(
-				"DELETE FROM $feeds_table_name WHERE id IN ($feed_ids_array)"
-			)
+			"DELETE FROM $feeds_table_name WHERE id IN ($feed_ids_array)"
 		);
 		$wpdb->query(
-			$wpdb->prepare(
-				"DELETE FROM $feed_caches_table_name WHERE feed_id IN ($feed_ids_array)"
-			)
+			"DELETE FROM $feed_caches_table_name WHERE feed_id IN ($feed_ids_array)"
 		);
 
 		echo sbi_json_encode( SBI_Feed_Builder::get_feed_list() );

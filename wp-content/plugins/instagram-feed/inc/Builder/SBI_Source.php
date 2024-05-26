@@ -39,6 +39,7 @@ bool(false)
 namespace InstagramFeed\Builder;
 
 use function DI\value;
+use InstagramFeed\Helpers\Util;
 
 class SBI_Source {
 
@@ -64,7 +65,7 @@ class SBI_Source {
 	 * @since 6.0
 	 */
 	public static function builder_update() {
-		if ( ! check_ajax_referer( 'sbi_admin_nonce', 'nonce', false ) && ! check_ajax_referer( 'sbi-admin', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'sbi-admin', 'nonce', false ) ) {
 			wp_send_json_error();
 		}
 		if ( ! sbi_current_user_can( 'manage_instagram_feed_options' ) ) {
@@ -164,7 +165,7 @@ class SBI_Source {
 	 * @since 6.0
 	 */
 	public static function builder_update_multiple() {
-		if ( ! check_ajax_referer( 'sbi_admin_nonce', 'nonce', false ) && ! check_ajax_referer( 'sbi-admin', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'sbi-admin', 'nonce', false ) ) {
 			wp_send_json_error();
 		}
 		if ( ! sbi_current_user_can( 'manage_instagram_feed_options' ) ) {
@@ -201,7 +202,7 @@ class SBI_Source {
 	 * @since 6.0
 	 */
 	public static function get_page() {
-		if ( ! check_ajax_referer( 'sbi_admin_nonce', 'nonce', false ) && ! check_ajax_referer( 'sbi-admin', 'nonce', false ) ) {
+		if ( ! check_ajax_referer( 'sbi-admin', 'nonce', false ) ) {
 			wp_send_json_error();
 		}
 		if ( ! sbi_current_user_can( 'manage_instagram_feed_options' ) ) {
@@ -237,9 +238,28 @@ class SBI_Source {
 			$admin_url_state = "http://$_SERVER[HTTP_HOST]$_SERVER[REQUEST_URI]";
 		}
 
-		$sb_admin_email = get_option( 'admin_email', '' );
-		$urls['personal']  ='https://connect.smashballoon.com/auth/ig/?wordpress_user=' . sanitize_email( $sb_admin_email ) . '&v=free&vn=' . SBIVER . '&sbi_con=' . $nonce . '&state=';
-		$urls['business'] = 'https://connect.smashballoon.com/auth/ig/?wordpress_user=' . sanitize_email( $sb_admin_email ) . '&v=free&vn=' . SBIVER . '&sbi_con=' . $nonce . '&state=';
+		$admin_email = get_option( 'admin_email', '' );
+		if ( is_user_logged_in() ) {
+			$current_user = wp_get_current_user();
+			$user_email = $current_user->user_email;
+		}
+		$user_email = isset( $user_email ) ? $user_email : $admin_email;
+
+		$urls['personal'] = array(
+			'connect'          => SBI_CONNECT_URL,
+			'wordpress_user'   => sanitize_email( $user_email ),
+			'v'                => 'free',
+			'vn'               => SBIVER,
+			'sbi_con'          => $nonce,
+		);
+
+		$urls['business'] = array(
+			'connect'          => SBI_CONNECT_URL,
+			'wordpress_user'   => sanitize_email( $user_email ),
+			'v'                => 'free',
+			'vn'               => SBIVER,
+			'sbi_con'          => $nonce,
+		);
 
 		$urls['stateURL'] = $admin_url_state;
 
@@ -505,7 +525,7 @@ class SBI_Source {
 				'error' => array(
 					'code'    => 'No Accounts Found',
 					'message' => __( 'Couldn\'t find Business Profile', 'instagram-feed' ),
-					'details' => sprintf( __( 'Uh oh. It looks like this Facebook account is not currently connected to an Instagram Business profile. Please check that you are logged into the %1$sFacebook account%2$s in this browser which is associated with your Instagram Business Profile. If you are, in fact, logged-in to the correct account please make sure you have Instagram accounts connected with your Facebook account by following %3$sthis FAQ%4$s', 'instagram-feed' ), '<a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer">', '</a>', '<a href="https://smashballoon.com/reconnecting-an-instagram-business-profile/" target="_blank" rel="noopener noreferrer">', '</a>' ),
+					'details' => sprintf( __( 'Uh oh. It looks like this Facebook account is not currently connected to an Instagram Business profile. Please check that you are logged into the %1$sFacebook account%2$s in this browser which is associated with your Instagram Business Profile. If you are, in fact, logged-in to the correct account please make sure you have Instagram accounts connected with your Facebook account by following %3$sthis FAQ%4$s', 'instagram-feed' ), '<a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer">', '</a>', '<a href="https://smashballoon.com/reconnecting-an-instagram-business-profile/" target="_blank" rel="noopener">', '</a>' ),
 				),
 			);
 		}
@@ -716,17 +736,26 @@ class SBI_Source {
 		$header_details       = '{}';
 		$source_data['error'] = '';
 		if ( ! $connection->is_wp_error() && ! $connection->is_instagram_error() ) {
-			$header_details_array = $connection->get_data();
-			$header_details_array = self::merge_account_details( $header_details_array, $connected_account );
+			$header_array = $connection->get_data();
+			$header_array = self::merge_account_details( $header_array, $connected_account );
 
-			$cdn_avatar_url = \SB_Instagram_Parse::get_avatar( $header_details_array, array(), true );
+			$cdn_avatar_url = \SB_Instagram_Parse::get_avatar( $header_array, array(), true );
 			if ( ! empty( $cdn_avatar_url ) ) {
-				$created = \SB_Instagram_Connected_Account::create_local_avatar( $header_details_array['username'], $cdn_avatar_url );
-				\SB_Instagram_Connected_Account::update_local_avatar_status( $header_details_array['username'], $created );
+				$created = \SB_Instagram_Connected_Account::create_local_avatar( $header_array['username'], $cdn_avatar_url );
+				\SB_Instagram_Connected_Account::update_local_avatar_status( $header_array['username'], $created );
+				
+				if($created){
+					$header_array['local_avatar_url'] = \SB_Instagram_Connected_Account::get_local_avatar_url( $header_array['username'] );
+					$header_array['local_avatar']     = \SB_Instagram_Connected_Account::get_local_avatar_url( $header_array['username'] );
+				}
+			} else {
+				\SB_Instagram_Connected_Account::delete_local_avatar( $header_array['username'] );
+				$header_array['local_avatar'] = false;
 			}
-
-			$source_data['username'] = $header_details_array['username'];
-			$header_details          = sbi_json_encode( $header_details_array );
+			$source_data['username'] = $header_array['username'];
+			$header_details          = sbi_json_encode( $header_array );
+			$source_data['local_avatar']     = $header_array['local_avatar'];
+			$source_data['local_avatar_url'] = $header_array['local_avatar'];
 		} else {
 			$source_data['error'] = $connection;
 			if ( $connection->is_wp_error() ) {
@@ -859,7 +888,7 @@ class SBI_Source {
 				'username'          => $source_datum['username'],
 				'access_token'      => sbi_maybe_clean( $source_datum['access_token'] ),
 				'privilege'         => $source_datum['privilege'],
-				'expires_timestamp' => strtotime( $source_datum['expires'] ),
+				'expires_timestamp' => Util::get_valid_timestamp( $source_datum['expires'] ),
 				'is_valid'          => empty( $source_datum['error'] ),
 				'profile_picture'   => $avatar,
 				'last_checked'      => isset( $source_datum['last_updated'] ) ? strtotime( $source_datum['last_updated'] ) : time(),

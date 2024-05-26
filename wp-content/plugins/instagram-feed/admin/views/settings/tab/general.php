@@ -1,4 +1,18 @@
 <div v-if="selected === 'app-1'">
+    <div class="sb-tab-box sbi-uo-install-notice clearfix" v-if="!uoActive && !uncannyAutomatorScreen.shouldHideAutomatorNotice && uncannyAutomatorScreen.canInstallAutomatorPlugin">
+        <div class="sbi-tab-notice">
+            <div class="sbi-notice-left">
+                <span class="icon" v-html="generalTab.uoInstallNotice.logo"></span>
+                <div class="sbi-notice-text">
+                    <p>{{generalTab.uoInstallNotice.notice}}</p>
+                </div>
+            </div>
+            <div class="sbi-notice-right">
+                <button class="sbi-btn sbi-notice-learn-more" @click.prevent.default="activateView('automatorIntegrationModal')">{{generalTab.uoInstallNotice.learnMore}}</button>
+                <button class="sbi-btn sbi-uo-notice-dismiss" v-html="generalTab.uoInstallNotice.closeIcon" @click.prevent.default="dismissAutomatorNotice()"></button>
+            </div>
+        </div>
+    </div>
 	<div class="sb-tab-box sb-license-box clearfix">
 		<div class="tab-label">
 			<h3>{{generalTab.licenseBox.title}}</h3>
@@ -296,7 +310,7 @@
             <div class="sb-form-field">
                 <div class="d-flex mb-15">
                     <select name="" id="sbi-feeds-list" class="sbi-select" v-model="exportFeed" ref="export_feed">
-                        <option value="none" selected disabled>Select Feed</option>
+                        <option value="none" selected disabled><?php _e('Select Feed', 'instagram-feed'); ?></option>
                         <option v-for="feed in feeds" :value="feed.id">{{ feed.name }}</option>
                     </select>
                     <button type="button" class="sbi-btn sb-btn-lg export-btn" @click="exportFeedSettings" :disabled="exportFeed === 'none'">

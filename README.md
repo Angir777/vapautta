@@ -7,4 +7,5 @@ Password: admin
 
 ## Project launch on xampp:
 1. Download this repository,
-2. Create a database 'wordpress' and import the file `wordpress.sql`.
+2. Create a database 'vapautta' and import the file `all-wp-for-vapautta-db.sql`.
+3. Configure file wp-config.php
