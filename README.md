@@ -1,4 +1,4 @@
-# Vapautta - WordPress Theme
+# Vapautta - WordPress All Theme Environment
 
 ![My Image](https://github.com/Angir777/vapautta/blob/master/wp-content/themes/vapautta/dist/img/screen.jpg)
 
