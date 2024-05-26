@@ -1,6 +1,6 @@
 # Vapautta - WordPress Theme
 
-![My Image](https://github.com/Angir777/vapautta/blob/master/wp-content/themes/szablon/dist/img/screen.jpg)
+![My Image](https://github.com/Angir777/vapautta/blob/master/wp-content/themes/vapautta/dist/img/screen.jpg)
 
 Login: admin
 Password: admin
